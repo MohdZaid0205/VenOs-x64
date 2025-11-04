@@ -1,0 +1,4 @@
+# Ignore Build and other Binary directories
+[Bb]in
+[Ll]ib
+[Oo]ut
