@@ -1,13 +1,15 @@
-[BITS 16]       ;; Use 16 bit mode as BIOS runs following code in
-                ;; something called REAL MODE which uses 16 bit
-                ;; registers in order to process everything.
-                ;; although it is possible for one to use whole 64
-                ;; bit of provided registers, but this would make
-                ;; compiled code larger than allowed code for bios
+[BITS 16]           ;; Use 16 bit mode as BIOS runs following code in
+                    ;; something called REAL MODE which uses 16 bit
+                    ;; registers in order to process everything.
+                    ;; although it is possible for one to use whole 64
+                    ;; bit of provided registers, but this would make
+                    ;; compiled code larger than allowed code for bios
 
-[ORG 0x7c00]    ;; This is LEGACY BIOS implementation, which loads
-                ;; bootable section into a predefined address of
-                ;; 0x7c00 in memory.
+%ifndef DEBUG
+    [ORG 0x7c00]    ;; This is LEGACY BIOS implementation, which loads
+                    ;; bootable section into a predefined address of
+                    ;; 0x7c00 in memory.
+%endif
 
 ;; following is layout of physical memory during bootloader process.
 ;;          +-------------------------------------------------------+
@@ -73,7 +75,7 @@ _gdt:
 
 [BITS 32]
 _pmode:
-    mov ax, 0x08    ;; ax must contain offset of code segment
+    mov ax, 0x10    ;; ax must contain offset of code segment
     mov ds, ax      ;; clean ds
     mov es, ax      ;; clean es
     mov fs, ax      ;; clean fs
