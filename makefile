@@ -9,7 +9,7 @@ SRC_DIR = ./src
 
 # to compile bootloader with nasm and pust it into a binary file, 
 # some other functions for visual clearence has been provided.
-boot: boot.s
+boot: ${SRC_DIR}/boot.s
 	nasm ${SRC_DIR}/boot.s -o ${BIN_DIR}/boot.bin -f bin
 
 boot-debug: boot
@@ -25,13 +25,11 @@ boot-debug: boot
 	# display boot record magic numbers.
 	xxd -s 0x01fe -l 0x0002 ${BIN_DIR}/boot.bin
 
-qemu-run:
-	qemu-system-x86_64 -drive file=./bin/boot.bin,format=raw,if=ide,index=0
-
-qemu-run-debug:
-	qemu-system-x86_64 -drive file=./bin/boot.bin,format=raw,if=ide,index=0 -s -S
+floppy: ${BIN_DIR}/boot.bin
+	cp ${BIN_DIR}/boot.bin ${BIN_DIR}/floppy.img
+	truncate -s 1440k ${BIN_DIR}/floppy.img
 
 clean:
-	rm ${BIN_DIR}/*.bin
-	rm ${OUT_DIR}/*.out
-	rm ${LIB_DIR}/*.lib
+	rm ${BIN_DIR}/*
+	rm ${OUT_DIR}/*
+	rm ${LIB_DIR}/*
