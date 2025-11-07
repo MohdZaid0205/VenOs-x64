@@ -25,8 +25,10 @@ boot-debug: boot
 	# display boot record magic numbers.
 	xxd -s 0x01fe -l 0x0002 ${BIN_DIR}/boot.bin
 
-floppy: ${BIN_DIR}/boot.bin
+floppy: boot
+	# copy contents from boot.bin to floppy. 
 	cp ${BIN_DIR}/boot.bin ${BIN_DIR}/floppy.img
+	# restrict size to maximum floppy size.
 	truncate -s 1440k ${BIN_DIR}/floppy.img
 
 clean:
