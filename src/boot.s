@@ -38,6 +38,7 @@ _prm:
     mov eax, cr0    ;; boilerplate
     or  al, 0x01    ;; boilerplate
     mov cr0, eax    ;; boilerplate
+
     jmp 0x08:_pmode ;; switch to ProtectedModeMain
 
 
