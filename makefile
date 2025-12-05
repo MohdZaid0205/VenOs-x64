@@ -27,9 +27,23 @@ boot-debug: boot
 
 floppy: boot
 	# copy contents from boot.bin to floppy. 
-	cp ${BIN_DIR}/boot.bin ${BIN_DIR}/floppy.img
+	cp ${BIN_DIR}/boot.bin ${OUT_DIR}/floppy.img
 	# restrict size to maximum floppy size.
-	truncate -s 1440k ${BIN_DIR}/floppy.img
+	truncate -s 1440k ${OUT_DIR}/floppy.img
+
+floppy-debug: floppy boot-debug
+	# copy contents from boot.elf to floppy.elf
+	cp ${BIN_DIR}/boot.elf ${OUT_DIR}/floppy.elf
+	# restrict size to maximum floppy size.
+	truncate -s 1440k ${OUT_DIR}/floppy.elf
+
+h-disk: boot
+	# copy boot sector to hard disk image file
+	cp ${BIN_DIR}/boot.bin ${OUT_DIR}/h_disk.img
+
+h-disk-debug: h-disk boot-debug
+	# copy boot sector debug file to disk debug file
+	cp ${BIN_DIR}/boot.elf ${OUT_DIR}/h_disk.elf
 
 clean:
 	rm ${BIN_DIR}/*
