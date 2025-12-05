@@ -11,6 +11,43 @@
                     ;; 0x7c00 in memory.
 %endif
 
+%macro rdis 2       ;; real mode display message in output stream
+    pusha                   ;; store current context of code (swith).
+    
+    jmp %1_C                ;; jump to code part to execute
+    %1_M: db %2             ;; dump message under any label
+    %1_E: db 0h             ;; dump end of massage to a label
+
+    ;; essentially firstly we get position of cursor and store
+    ;; poition of cursor at specified position in display for print
+
+%1_C:
+    mov ah, 0x03            ;; to get current sursor position
+    xor bh, bh              ;; no page is to be specified
+    int 0x10                ;; invoke interrupt 0x10
+
+    cli                     ;; temporarily stop interrupts
+    
+    mov bh, 0x01            ;; string is stored in current page
+    mov bp, %1_M            ;; move message into bp for print
+    mov cx, %1_E - %1_M     ;; subtract length of dumped byte
+    mov bx, 0x02            ;; font color (0x02 = green color)
+    mov ah, 0x13            ;; print command inst number
+    mov al, 0x01            ;; remember that ah=0x13 and
+                            ;; al = 0x01 therefore ax = ...
+    int 0x10                ;; invoke interrupt 0x10
+
+    sti                     ;; start taking interrupts
+
+    mov ah, 0x02            ;; to set cursor to next line
+    xor dl, dl              ;; column number set = 0
+    add dh, 0x01            ;; row number set += 1
+    int 0x10
+
+    popa                    ;; resotore execution context for code.
+
+%endmacro
+
 ;; following is layout of physical memory during bootloader process.
 ;;          +-------------------------------------------------------+
 ;; 0x0000 : | 0x7c00        ;; point to where boot.asm is loaded    |
@@ -22,6 +59,8 @@
 
 _start:
     
+    rdis BRM, "BIOS Running in Real Mode."
+
     cli             ;; temporarily stop interrupts.
     xor ax, ax      ;; set ax to 0x00  (register R-AX)
     mov ds, ax      ;; set ds to 0x00  (data  segment)
@@ -33,11 +72,16 @@ _start:
     jmp _prm        ;; switch to protected mode.
 
 _prm:
+    rdis SPM, "BIOS Switched to Protected Mode."
+
     cli             ;; clear all interrupts
     lgdt[_gdt.des]  ;; load gdt information into GDTR
     mov eax, cr0    ;; boilerplate
     or  al, 0x01    ;; boilerplate
     mov cr0, eax    ;; boilerplate
+    
+    ;; real mode has stopeed here, none of the real mode
+    ;; interrupts and bios functions work here and next.
 
     jmp 0x08:_pmode ;; switch to ProtectedModeMain
 
@@ -76,6 +120,8 @@ _gdt:
 
 [BITS 32]
 _pmode:
+    ;; pdis RPM, "BIOS Running in Protected Mode."
+
     mov ax, 0x10    ;; ax must contain offset of code segment
     mov ds, ax      ;; clean ds
     mov es, ax      ;; clean es
@@ -89,7 +135,8 @@ _pmode:
     in al, 0x92     ;; boilerplate for A20 activation
     or al, 0x02     ;; boilerplate for A20 activation
     out 0x92, al    ;; boilerplate for A20 activation
-
+    
+    ;; pdis END, "BIOS Looping to Stop Termination"
     jmp $
     
 
