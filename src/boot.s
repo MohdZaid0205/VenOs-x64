@@ -57,9 +57,8 @@
 ;; 0x____ : |               ;; parts and final magic numbers        |
 ;;          +-------------------------------------------------------+
 
-_start:
-    
-    rdis BRM, "BIOS Running in Real Mode."
+_start:             ;; Bootloader main entrypoint.
+    ;; rdis R_MODE, "BIOS Running in Real Mode."
 
     cli             ;; temporarily stop interrupts.
     xor ax, ax      ;; set ax to 0x00  (register R-AX)
@@ -69,10 +68,33 @@ _start:
     mov sp, 0x7c00  ;; set sp to BEGIN (stack pointer)
     sti             ;; star taking interrupts.
     
-    jmp _prm        ;; switch to protected mode.
+    ;; jmp _prm        ;; switch to protected mode.
 
-_prm:
-    rdis SPM, "BIOS Switched to Protected Mode."
+    ;; ;;currently BIOS stores type of drive that is used for
+    ;; ;; booting into the bios, inside register @dl.
+    
+    ;; mov [boot_drive_id], dl     ;; store boot drive id
+    ;; cmp dl, 0x80                ;; compare id to first hdrive
+    ;; jae __boot_device_hdrive    ;; above or equal => hdrive
+    ;; jmp __boot_device_floppy    ;; lower than 126 => floppy
+ 
+    ;; ;; structured data compartment for storing relevent
+    ;; ;; data that bios has to lode in real mode
+    ;; boot_drive_id: db 0x01    ;; contains boot drive id
+
+;; __boot_device_hdrive:
+    ;; rdis HDRIVE, "BIOS Booting from HDRIVE."
+    ;; jmp _rme
+
+;; __boot_device_floppy:
+    ;; rdis FLOPPY, "BIOS Booting from FLOPPY."
+    ;; jmp _rme        ;; jump to real mode exit
+
+_rme:               ;; real mode exits here
+    jmp _prm        ;; init switch to protected mode
+
+_prm:               ;; protected mode swith 
+    ;; rdis P_MODE, "BIOS Switched to Protected Mode."
 
     cli             ;; clear all interrupts
     lgdt[_gdt.des]  ;; load gdt information into GDTR
@@ -86,7 +108,7 @@ _prm:
     jmp 0x08:_pmode ;; switch to ProtectedModeMain
 
 
-_gdt:
+_gdt:               ;; initialization for GDT
     .start:
         ;; remember start address for _gdt
 
@@ -119,7 +141,7 @@ _gdt:
         dd .start
 
 [BITS 32]
-_pmode:
+_pmode:             ;; protected mode main method
     ;; pdis RPM, "BIOS Running in Protected Mode."
 
     mov ax, 0x10    ;; ax must contain offset of code segment
