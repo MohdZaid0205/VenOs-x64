@@ -8,6 +8,8 @@ _kernel:
     mov esi, 0x02
     mov edi, 0x00
 
+    jmp $
+
     .end:
         ;; exit kernal with provided exit code
 
