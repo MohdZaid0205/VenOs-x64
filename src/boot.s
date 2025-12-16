@@ -70,17 +70,17 @@ _start:             ;; Bootloader main entrypoint.
     
     ;; jmp _prm        ;; switch to protected mode.
 
-    ;; ;;currently BIOS stores type of drive that is used for
-    ;; ;; booting into the bios, inside register @dl.
+    ;; currently BIOS stores type of drive that is used for
+    ;; booting into the bios, inside register @dl.
     
-    ;; mov [boot_drive_id], dl     ;; store boot drive id
+    mov [boot_drive_id], dl     ;; store boot drive id
     ;; cmp dl, 0x80                ;; compare id to first hdrive
     ;; jae __boot_device_hdrive    ;; above or equal => hdrive
     ;; jmp __boot_device_floppy    ;; lower than 126 => floppy
  
-    ;; ;; structured data compartment for storing relevent
-    ;; ;; data that bios has to lode in real mode
-    ;; boot_drive_id: db 0x01    ;; contains boot drive id
+    ;; structured data compartment for storing relevent
+    ;; data that bios has to lode in real mode
+    boot_drive_id: db 0x01    ;; contains boot drive id
 
 ;; __boot_device_hdrive:
     ;; rdis HDRIVE, "BIOS Booting from HDRIVE."
@@ -91,6 +91,21 @@ _start:             ;; Bootloader main entrypoint.
     ;; jmp _rme        ;; jump to real mode exit
 
 _rme:               ;; real mode exits here
+    
+    ;; we need to load kernel main into memory _kernel
+    ;; we use CHS system in order to load kernel into
+    ;; memory, more specifically DRAM, as only 0x1000
+    ;; bytes were loaded by the bootloader at start.
+    
+    mov dl, [boot_drive_id]     ;; device to load from
+    mov ch, 0x00                ;; [C]ylinder number
+    mov cl, 0x02                ;; [S]ector   number
+    mov dh, 0x00                ;; [H]ead     number
+    mov al, 0x01                ;; num sector to load
+    mov bx, 0x10000             ;; address to load to
+    mov ah, 0x02                ;; load from device int
+    int 0x13
+
     jmp _prm        ;; init switch to protected mode
 
 _prm:               ;; protected mode swith 
@@ -102,7 +117,7 @@ _prm:               ;; protected mode swith
     or  al, 0x01    ;; boilerplate
     mov cr0, eax    ;; boilerplate
     
-    ;; real mode has stopeed here, none of the real mode
+    ;; real mode has stopped here, none of the real mode
     ;; interrupts and bios functions work here and next.
 
     jmp 0x08:_pmode ;; switch to ProtectedModeMain
@@ -159,8 +174,10 @@ _pmode:             ;; protected mode main method
     out 0x92, al    ;; boilerplate for A20 activation
     
     ;; pdis END, "BIOS Looping to Stop Termination"
-    jmp $
+    ;; jmp $
     
+    ;; jump to kernel entrypoint and start executing.
+    jmp 0x10000     ;; address of where we loaded it.
 
 ;; fill all part of code till last 2 magic bytes with 0x00, why:
 ;; we need magic number at specific location, ie 511 and 512, so in
