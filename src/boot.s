@@ -77,6 +77,7 @@ _start:             ;; Bootloader main entrypoint.
     ;; cmp dl, 0x80                ;; compare id to first hdrive
     ;; jae __boot_device_hdrive    ;; above or equal => hdrive
     ;; jmp __boot_device_floppy    ;; lower than 126 => floppy
+    jmp _rme
  
     ;; structured data compartment for storing relevent
     ;; data that bios has to lode in real mode
@@ -102,7 +103,7 @@ _rme:               ;; real mode exits here
     mov cl, 0x02                ;; [S]ector   number
     mov dh, 0x00                ;; [H]ead     number
     mov al, 0x01                ;; num sector to load
-    mov bx, 0x10000             ;; address to load to
+    mov bx, 0x1000              ;; address to load to
     mov ah, 0x02                ;; load from device int
     int 0x13
 
@@ -177,7 +178,7 @@ _pmode:             ;; protected mode main method
     ;; jmp $
     
     ;; jump to kernel entrypoint and start executing.
-    jmp 0x10000     ;; address of where we loaded it.
+    jmp 0x1000     ;; address of where we loaded it.
 
 ;; fill all part of code till last 2 magic bytes with 0x00, why:
 ;; we need magic number at specific location, ie 511 and 512, so in

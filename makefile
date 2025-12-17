@@ -12,6 +12,9 @@ SRC_DIR = ./src
 boot: ${SRC_DIR}/boot.s
 	nasm ${SRC_DIR}/boot.s -o ${BIN_DIR}/boot.bin -f bin
 
+kernel: ${SRC_DIR}/kernel.s
+	nasm ${SRC_DIR}/kernel.s -o ${BIN_DIR}/kernel.bin -f bin 
+
 boot-debug: boot
 	nasm ${SRC_DIR}/boot.s -o ${BIN_DIR}/boot.elf -f elf64 -g -F dwarf -DDEBUG
 	# following code is to display different segments of bootloader in visual 
@@ -25,25 +28,37 @@ boot-debug: boot
 	# display boot record magic numbers.
 	xxd -s 0x01fe -l 0x0002 ${BIN_DIR}/boot.bin
 
-floppy: boot
-	# copy contents from boot.bin to floppy. 
-	cp ${BIN_DIR}/boot.bin ${OUT_DIR}/floppy.img
+kernel-debug: kernel
+	nasm ${SRC_DIR}/kernel.s -o ${BIN_DIR}/kernel.elf -f elf64 -g -F dwarf -DDEBUG
+	
+	# display kernel entry point informations
+	xxd -s 0x0000 ${BIN_DIR}/kernel.bin
+	# display all headers present in elf file
+	objdump -x ${BIN_DIR}/kernel.elf
+	# display defined symbols within kernel
+	readelf ${BIN_DIR}/kernel.elf -s
+	
+
+floppy: boot kernel
+	# copy contents from *.bin to floppy.
+	cat ${BIN_DIR}/*.bin > ${OUT_DIR}/floppy.img 
 	# restrict size to maximum floppy size.
 	truncate -s 1440k ${OUT_DIR}/floppy.img
 
-floppy-debug: floppy boot-debug
-	# copy contents from boot.elf to floppy.elf
-	cp ${BIN_DIR}/boot.elf ${OUT_DIR}/floppy.elf
-	# restrict size to maximum floppy size.
-	truncate -s 1440k ${OUT_DIR}/floppy.elf
+# floppy-debug: floppy boot-debug kernel-debug
+#  	# copy contents from boot.elf to floppy.elf
+#	cat ${BIN_DIR}/*.elf > ${OUT_DIR}/floppy.elf
+#	# restrict size to maximum floppy size.
+#	truncate -s 1440k ${OUT_DIR}/floppy.elf
 
-hdrive: boot
+hdrive: boot kernel
 	# copy boot sector to hard disk image file
-	cp ${BIN_DIR}/boot.bin ${OUT_DIR}/hdrive.img
+	cat ${BIN_DIR}/*.bin > ${OUT_DIR}/hdrive.img
+	truncate -s 8g ${OUT_DIR}/hdrive.img
 
-hdrive-debug: hdrive boot-debug
-	# copy boot sector debug file to disk debug file
-	cp ${BIN_DIR}/boot.elf ${OUT_DIR}/hdrive.elf
+# hdrive-debug: hdrive boot-debug
+#	# copy boot sector debug file to disk debug file
+#	cp ${BIN_DIR}/*.elf ${OUT_DIR}/hdrive.elf
 
 clean:
 	rm ${BIN_DIR}/*
