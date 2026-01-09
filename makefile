@@ -45,11 +45,11 @@ floppy: boot kernel
 	# restrict size to maximum floppy size.
 	truncate -s 1440k ${OUT_DIR}/floppy.img
 
-# floppy-debug: floppy boot-debug kernel-debug
-#  	# copy contents from boot.elf to floppy.elf
-#	cat ${BIN_DIR}/*.elf > ${OUT_DIR}/floppy.elf
-#	# restrict size to maximum floppy size.
-#	truncate -s 1440k ${OUT_DIR}/floppy.elf
+floppy-debug: floppy boot-debug kernel-debug
+  	# copy contents from boot.elf to floppy.elf
+	cat ${BIN_DIR}/*.elf > ${OUT_DIR}/floppy.elf
+	# restrict size to maximum floppy size.
+	# truncate -s 1440k ${OUT_DIR}/floppy.elf
 
 hdrive: boot kernel
 	# copy boot sector to hard disk image file
