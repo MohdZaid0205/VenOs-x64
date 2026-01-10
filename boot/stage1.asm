@@ -19,6 +19,29 @@
 jmp SHORT _start    ;; jump to _start: to initiate stage1 skip record 
 nop
 
+;; BOOT RECORDS 
+BPB_OEM:                        db "mkdosfs"
+BPB_BYTES_PER_SECTOR:           dw 0x2000
+BPB_SECTORS_PER_CLUSTER:        db 0x01
+BPB_RESERVED_SECTORS:           db 0x01
+BPB_NUMBER_OF_FATS:             db 0x02
+BPB_ROOT_ENTRIES:               dw 0x00E0
+BPB_TOTAL_SECTORS:              dw 0x0B40
+BPB_MEDIA:                      db 0xF0
+BPB_SECTORS_PER_FAT:            dw 0x0009
+BPB_SECTORS_PER_TRACK:          dw 0x0014
+BPB_HEADS_PER_CYLENDER:         dw 0x0002
+BPB_HIDDEN_SECTORS:             dd 0x00000000
+BPB_LARGE_SECTORS:              dd 0x00000000
+
+;; EXTENDED_BOOT_RECORDS
+BS_DRIVE_NUMBER:                db 0x00
+BS_UNUSED:                      db 0x00
+BS_EXTENDED_BOOT_SIGNATURE:     db 0x29
+BS_SERIAL_NUMBER:               dd 0xA0A1A2A3
+BS_VOLUME_LABEL:                db "VENTURE-v01"
+BS_FILE_SYSTEM:                 db "FAT12   "
+
 _start:
     jmp $           ;; loop here indefinitely for the time being [tmp]
 
