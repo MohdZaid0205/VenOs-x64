@@ -20,16 +20,16 @@ jmp SHORT _start    ;; jump to _start: to initiate stage1 skip record
 nop
 
 ;; BOOT RECORDS 
-BPB_OEM:                        db "mkdosfs"
-BPB_BYTES_PER_SECTOR:           dw 0x2000
+BPB_OEM:                        db "VENTURE1"
+BPB_BYTES_PER_SECTOR:           dw 0x0200
 BPB_SECTORS_PER_CLUSTER:        db 0x01
-BPB_RESERVED_SECTORS:           db 0x01
+BPB_RESERVED_SECTORS:           dw 0x0001
 BPB_NUMBER_OF_FATS:             db 0x02
 BPB_ROOT_ENTRIES:               dw 0x00E0
 BPB_TOTAL_SECTORS:              dw 0x0B40
 BPB_MEDIA:                      db 0xF0
 BPB_SECTORS_PER_FAT:            dw 0x0009
-BPB_SECTORS_PER_TRACK:          dw 0x0014
+BPB_SECTORS_PER_TRACK:          dw 0x0012
 BPB_HEADS_PER_CYLENDER:         dw 0x0002
 BPB_HIDDEN_SECTORS:             dd 0x00000000
 BPB_LARGE_SECTORS:              dd 0x00000000
