@@ -53,7 +53,7 @@ _start:
     sti             ;; star taking interrupts.
     
 
-    mov ax, 0x200
+    mov ax, 0x01    ;; temporarily test by loading sector 1
     mov cl, 0x01
     mov dl, 0x00
     mov bx, 0x1000
