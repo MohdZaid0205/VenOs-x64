@@ -5,6 +5,10 @@ This project is fun exercise to implement a complete or sudo-complete
 Operating system from scratch by applying concepts learnt during OS sessions
 at IIIT Delhi OS batch (2025).
 
+## Showcase
+
+![First Barebones Screen](/res/first-barebone-screen.png)
+
 ## Usage
 
 In order to use this project with `qemu` youll need some important toolsets
