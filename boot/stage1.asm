@@ -11,10 +11,11 @@
                     ;; 0x7c00 in memory.
 %endif
 
-;; Boot Record
-;; BPB (Bios Parameter Block) holding required information about files
-;; it is necessary for safely loading stage2-bootloader and saving all
-;; necessary information for later programs into memory
+;; Boot Record ---------------------------------------------------------+
+;; BPB (Bios Parameter Block) holding required information about files  |
+;; it is necessary for safely loading stage2-bootloader and saving all  |
+;; necessary information for later programs into memory                 |
+;; ---------------------------------------------------------------------+
 
 jmp SHORT _start    ;; jump to _start: to initiate stage1 skip record 
 nop
@@ -42,79 +43,107 @@ BS_SERIAL_NUMBER:               dd 0xA0A1A2A3
 BS_VOLUME_LABEL:                db "VENTURE-v01"
 BS_FILE_SYSTEM:                 db "FAT12   "
 
+;; following is layout of physical memory during bootloader process.
+;;          +-----------------------------------------------------------+
+;; 0x0000 : | 0x7c00        ;; point to where boot.asm is loaded        |
+;; 0x____ : |~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
+;; 0x7c00 : | 0x____        ;; Binary code of boot.asm is here          |
+;; 0x____ : |               ;; this code is partioned into ins          |
+;; 0x____ : |               ;; parts and final magic numbers            |
+;;          +-----------------------------------------------------------+
+
 _start:
     
-    cli             ;; temporarily stop interrupts.
-    xor ax, ax      ;; set ax to 0x00  (register R-AX)
-    mov ds, ax      ;; set ds to 0x00  (data  segment)
-    mov es, ax      ;; set es to 0x00  (extra segment)
-    mov ss, ax      ;; set ss to 0x00  (stack segment)
-    mov sp, 0x7c00  ;; set sp to BEGIN (stack pointer)
-    sti             ;; star taking interrupts.
+    cli                     ;; temporarily stop interrupts.
+    xor ax, ax              ;; set ax to 0x00  (register R-AX)
+    mov ds, ax              ;; set ds to 0x00  (data  segment)
+    mov es, ax              ;; set es to 0x00  (extra segment)
+    mov ss, ax              ;; set ss to 0x00  (stack segment)
+    mov sp, 0x7c00          ;; set sp to BEGIN (stack pointer)
+    sti                     ;; star taking interrupts.
     
-
-    mov ax, 0x01    ;; temporarily test by loading sector 1
-    mov cl, 0x01
-    mov dl, 0x00
-    mov bx, 0x1000
-    call disk_read
-    
-    jmp 0x1000           ;; loop here indefinitely for the time being [tmp]
+    jmp $
 
 ;; fight with Logaical base Addressing and Cylender Head Sector (CHS)
-;; sector   = (LBA % SECTORS_PER_TRACK) + 1
-;; head     = (LBA / SECTORS_PER_TRACK) % HEADS_PER_CYLENDER
-;; cylender = (LBA / SECTORS_PER_TRACK) / HEADS_PER_CYLENDER
+;;  +-------------------------------------------------------------------+
+;;  |sector     = (LBA % SECTORS_PER_TRACK) + 1                         |
+;;  +-------------------------------------------------------------------+
+;;  |head       = (LBA / SECTORS_PER_TRACK) % HEADS_PER_CYLENDER        |
+;;  +-------------------------------------------------------------------+
+;;  |cylender   = (LBA / SECTORS_PER_TRACK) / HEADS_PER_CYLENDER        |
+;;  +-------------------------------------------------------------------+
+;; https://wiki.osdev.org/LBA
 
 ;; take LBA as an input into eax = [ah] [ax]
 ;; returns ch, cl and dh as required by read instruction
+
+;; FUNCTION LBA_TO_CHS(ax=LBA_ADDRESS) (**)<0 .. BPB_TOTAL_SECTORS - 1>
+;;  ax :: Takes in SECTOR NUMBER that must be strictly less within (**)
+;;  -> :: SETs VALUES OF REGISTERS (cx, dh, dl and ax)
 lba_to_chs:
-    push ax         ;; store the argument that has been provided in ax
-    push dx         ;; store the contents of temporarily used register
 
-    xor dx, dx      ;; clear (to remove garbage) and store sector num
-    div word [BPB_SECTORS_PER_TRACK]
-                    ;; dx = LBA % SECTORS_PER_TRACK
-                    ;  ax = LBA / SECTORS_PER_TRACK
+    push ax                 ;; Save original LBA
+    push dx                 ;; Save original Drive Number
 
-    inc dx          ;; increment by one (first lelement = sector 1)
-    mov cx, dx      ;; store result into cx register as required
+    xor dx, dx              ;; Zero dx for division
+    div word [BPB_SECTORS_PER_TRACK]   
     
-    xor dx, dx      ;; clear (to remove garbage) and store sector num
-    div word [BPB_HEADS_PER_CYLENDER]
-                    ;; dx = (LBA / SECTORS_PER_TRACK) % HEADS_PER_CYLENDER
-                    ;; ax = (LBA / SECTORS_PER_TRACK) / HEADS_PER_CYLENDER
+    ;; here ------------------------------------------------------------+
+    ;; dx = LBA % SECTORS_PER_TRACK                                     |
+    ;; ax = LBA / SECTORS_PER_TRACK                                     |
+    ;; -----------------------------------------------------------------+
+
+    inc dx                  ;; Convert to 1-based Sector (1..63)
+    mov cx, dx              ;; Move Sector to cx (cl = Sector, ch = 0)
+
+    xor dx, dx              ;; Zero DX for second division
+    div word [BPB_HEADS_PER_CYLINDER]
     
-    ;; cx contains index of sectors that we need to read.
-    ;; dx contains index of head over cylender heads we need to read.
-    ;; ax contains index od cylender/face we need to read.
+    ;; here ------------------------------------------------------------+
+    ;; dx = (LBA / SECTORS_PER_TRACK) % HEADS_PER_CYLENDER              |
+    ;; ax = (LBA / SECTORS_PER_TRACK) / HEADS_PER_CYLENDER              |
+    ;; -----------------------------------------------------------------+
 
-    mov dh, dl      ;; prepare dh with head number
-    mov ch, al      ;; prepare ch with cylender number
-    shl ah, 6       ;; shift left by 6 in in order to have upper 2 bits 
-    or cl, ah       ;; prepate cl by storing upper 2 bits
+    mov dh, dl              ;; Move Head result to dh
+    mov ch, al              ;; ch = Low 8 bits of Cylinder
+    shl ah, 0x06            ;; Shift Cylinder high bits (8-9) to positions 6-7
+    or  cl, ah              ;; Merge high Cylinder bits into cl (Sector)
 
-    pop ax          ;; store dx temporaily into ax
-    mov dl, al      ;; copy lower 8 bits for device specifier
-    pop ax          ;; store initial argument of lba_to_chs
+    pop ax                  ;; Pop original dx (Drive ID) into ax
+    mov dl, al              ;; Restore Drive id to dl
+    pop ax                  ;; Restore original LBA to ax
 ret
 
-;; take arguments ax=LBA, cl=n_sectors_t_read, dl=drive_number, es:bx=buff
-;; and fills es:bx buffer memory with loaded values from disk
+;; FUNCTION DISK_READ(ax=LBA, cl=N_SECTORS, dl=DRIVE, es:bx=BUFFER)
+;;  ax    :: LBA Address to read from
+;;  cl    :: Number of sectors to read (1 .. 128 recommended limit)
+;;  dl    :: Drive number (e.g., 0x00 for floppy, 0x80 for HDD)
+;;  es:bx :: Pointer to the buffer where data will be stored
+;;  ->    :: Fills memory at [es:bx] with data from disk
+;;  ->    :: Sets Carry Flag (cf) if an error occurs (ch = Error Code)
 disk_read:
-    ;; assuming everytihg has beed set properly before calling this function
-    push cx         ;; save [cl] number of sectors to read
-    call lba_to_chs ;; populate required registers with chs values
-    pop ax          ;; set number of sectors to read properly for int13
+    push cx                 ;; Save sector count (cl). The LBA conversion
+                            ;; routine will overwrite cx with Cylinder data,
+                            ;; so we must stash the count on the stack.
 
-    mov ah, 0x02    ;; read from memory BIOS interrupt ah value (required)
-    int 0x13        ;; finally call the interrupt to load values into it
+    call lba_to_chs         ;; Calculate CHS from LBA.
+                            ;; cx (Cyl/Sec)
+                            ;; dh (Head)
+                            ;; dl (Drive)
+                            ;; ax (LBA)
+
+    pop  ax                 ;; Restore the sector count.
+    mov ah, 0x02            ;; Read Sectors From Drive
+    
+    int 0x13                ;; INVOKE BIIOS
 ret
 
-;; fill all part of code till last 2 magic bytes with 0x00, why:
-;; we need magic number at specific location, ie 511 and 512, so in
-;; order to reach 511th byte we need to dump bytes into our binary
-;; this makes sure that enough bytes are filled to achive 511.
+;; ---------------------------------------------------------------------+
+;; fill all part of code till last 2 magic bytes with 0x00, why:        |
+;; we need magic number at specific location, ie 511 and 512, so in     |
+;; order to reach 511th byte we need to dump bytes into our binary      |
+;; this makes sure that enough bytes are filled to achive 511.          |
+;; ---------------------------------------------------------------------+
 times 510 - ($ - $$) db 0
 
 ;; magic address 511 & 512 with magic number 0xAA & 0x55 as rewuired
