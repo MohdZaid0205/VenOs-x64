@@ -20,28 +20,59 @@
 jmp SHORT _start    ;; jump to _start: to initiate stage1 skip record 
 nop
 
+;; Add Support for FAT12(FLOPPY) and FAT32(H_DISK & H_DRIVE) by changing
+;; BIOS PARAMETER BLOCK accordingly at places for compatiblity.
+;; https://academy.cba.mit.edu/classes/networking_communications/SD/FAT.pdf
+
 ;; BOOT RECORDS 
 BPB_OEM:                        db "VENTURE1"
 BPB_BYTES_PER_SECTOR:           dw 0x0200
 BPB_SECTORS_PER_CLUSTER:        db 0x01
 BPB_RESERVED_SECTORS:           dw 0x0001
 BPB_NUMBER_OF_FATS:             db 0x02
-BPB_ROOT_ENTRIES:               dw 0x00E0
-BPB_TOTAL_SECTORS:              dw 0x0B40
+
+%ifdef FAT12
+    BPB_ROOT_ENTRIES:           dw 0x00E0
+    BPB_TOTAL_SECTORS_16:       dw 0x0B40
+%endif
+%ifdef FAT32
+    BPB_ROOT_ENTRIES:           dw 0x0000
+    BPB_TOTAL_SECTORS_16:       dw 0x0000
+%endif
+
 BPB_MEDIA:                      db 0xF0
-BPB_SECTORS_PER_FAT:            dw 0x0009
+
+%ifdef FAT12
+    BPB_FAT_SIZE_16:            dw 0x0009
+%endif
+%ifdef FAT32
+    BPB_FAT_SIZE_16:            dw 0x0000
+%endif
+
 BPB_SECTORS_PER_TRACK:          dw 0x0012
 BPB_HEADS_PER_CYLENDER:         dw 0x0002
 BPB_HIDDEN_SECTORS:             dd 0x00000000
-BPB_LARGE_SECTORS:              dd 0x00000000
 
-;; EXTENDED_BOOT_RECORDS
-BS_DRIVE_NUMBER:                db 0x00
-BS_UNUSED:                      db 0x00
-BS_EXTENDED_BOOT_SIGNATURE:     db 0x29
-BS_SERIAL_NUMBER:               dd 0xA0A1A2A3
-BS_VOLUME_LABEL:                db "VENTURE-v01"
-BS_FILE_SYSTEM:                 db "FAT12   "
+%ifdef FAT12
+    BPB_TOTAL_SECTORS_32:       dd 0x00000000
+%endif
+%ifdef FAT32
+    BPB_TOTAL_SECTORS_32:       dd 0x00010000
+%endif
+
+;; EXTENDED_BOOT_RECORDS for FAT12(FLOPPY) devices
+%ifdef FAT12
+    BS_DRIVE_NUMBER:            db 0x00
+    BS_UNUSED:                  db 0x00
+    BS_EXTENDED_BOOT_SIGNATURE: db 0x29
+    BS_SERIAL_NUMBER:           dd 0xA0A1A2A3
+    BS_VOLUME_LABEL:            db "VENTURE-v01"
+    BS_FILE_SYSTEM:             db "FAT12   "
+%endif
+
+%ifdef FAT32
+    
+%endif
 
 ;; following is layout of physical memory during bootloader process.
 ;;          +-----------------------------------------------------------+
