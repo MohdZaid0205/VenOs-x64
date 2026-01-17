@@ -50,7 +50,7 @@ BPB_MEDIA:                      db 0xF0
 %endif
 
 BPB_SECTORS_PER_TRACK:          dw 0x0012
-BPB_HEADS_PER_CYLENDER:         dw 0x0002
+BPB_HEADS_PER_CYLINDER:         dw 0x0002
 BPB_HIDDEN_SECTORS:             dd 0x00000000
 
 %ifdef FAT12
@@ -64,14 +64,30 @@ BPB_HIDDEN_SECTORS:             dd 0x00000000
 %ifdef FAT12
     BS_DRIVE_NUMBER:            db 0x00
     BS_UNUSED:                  db 0x00
-    BS_EXTENDED_BOOT_SIGNATURE: db 0x29
+    BS_BOOT_SIGNATURE:          db 0x29
     BS_SERIAL_NUMBER:           dd 0xA0A1A2A3
-    BS_VOLUME_LABEL:            db "VENTURE-v01"
+    BS_VOLUME_LABEL:            db "VENTURE-FLP"
     BS_FILE_SYSTEM:             db "FAT12   "
 %endif
 
+;; EXTENDED_BOOT_RECORDS for FAT32(H_DISK) devices
 %ifdef FAT32
-    
+    BPB_FAT_SIZE_32:            dd 0x00000000
+    BPB_EXTENDED_FLAGS:         dw 0x0000
+    BPB_FILE_SYSTEM_VERSION:    dw 0x0000
+    BPB_ROOT_CLUSTER:           dd 0x00000002
+    BPB_FILE_SYSTEM_INFO:       dw 0x0001
+    BPB_BACKUP_BOOT_SECTOR:     dw 0x0006
+    BPB_RESERVED:               dd 0x00000000
+                                dd 0x00000000
+                                dd 0x00000000
+
+    BS_DRIVE_NUMBER:            db 0x80
+    BS_UNUSED:                  db 0x00
+    BS_BOOT_SIGNATURE:          db 0x29
+    BS_VOLUME_ID:               dd 0xA0A1A2A3
+    BS_VOLUME_LABEL:            db "VENTURE-HDD"
+    BS_FILE_SYSTEM:             db "FAT32   "
 %endif
 
 ;; following is layout of physical memory during bootloader process.
@@ -93,6 +109,10 @@ _start:
     mov sp, 0x7c00          ;; set sp to BEGIN (stack pointer)
     sti                     ;; star taking interrupts.
     
+    ;; initially dl register is set with device id of bootable device.
+    mov [BS_DRIVE_NUMBER], dl   ;; store device id, in case if its not
+                                ;; default address.
+
     jmp $
 
 ;; fight with Logaical base Addressing and Cylender Head Sector (CHS)
