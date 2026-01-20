@@ -90,6 +90,23 @@ BPB_HIDDEN_SECTORS:             dd 0x00000000
     BS_FILE_SYSTEM:             db "FAT32   "
 %endif
 
+;; Following are macros used to create life easier for debugging and print
+;; note that these used BIOS interupts in order to achive desired behaviour
+;; therefore it can only be used while REAL-Mode is active, not ever after
+;; switching out of real mode.
+
+;; Display given string to screen, using int 0x10 and at current cursor pos
+%macro put 1
+    jmp %%_CALL             ;; jump to calling data, ignore data itself
+    %%_BGN: db %1           ;; dump message into any label
+    %%_END: db 0x00         ;; null terminate the string
+%%_CALL:
+    mov bp, %%_BGN          ;; point to stored message for print
+    mov cx, %%_END - %%_BGN ;; length of string in bytes
+    
+    call print_line         ;; call routine for bios print line
+%endmacro
+
 ;; following is layout of physical memory during bootloader process.
 ;;          +-----------------------------------------------------------+
 ;; 0x0000 : | 0x7c00        ;; point to where boot.asm is loaded        |
@@ -173,6 +190,7 @@ ret
 ;;  ->    :: Fills memory at [es:bx] with data from disk
 ;;  ->    :: Sets Carry Flag (cf) if an error occurs (ch = Error Code)
 disk_read:
+
     push cx                 ;; Save sector count (cl). The LBA conversion
                             ;; routine will overwrite cx with Cylinder data,
                             ;; so we must stash the count on the stack.
@@ -188,6 +206,41 @@ disk_read:
     
     int 0x13                ;; INVOKE BIIOS
 ret
+
+;; FUNCTION_PRINT_LINE(bp=STRING_POINTER, cx=LENGTH_OF_SPECIFIED STRING)
+;;  bp      :: contains pointer to string that is to be printed
+;;  cx      :: contains length of string to print to screen
+;;  ->      :: Calls int 0x13 and moves to next line (no_return)
+print_line:
+
+    pusha                   ;; store current context.
+
+    push cx                 ;; this is overwritten by cursor pos intr...
+    mov ah, 0x03            ;; to get current cursor position
+    xor bh, bh              ;; no page is to be specified
+    int 0x10                ;; invoke interrupt 0x10
+    pop cx                  ;; restore length of string
+
+    cli                     ;; temporarily stop interrupts
+    
+    mov bh, 0x01            ;; string is stored in current page
+    mov bx, 0x02            ;; font color (0x02 = GREEN color)
+    mov ah, 0x13            ;; print command inst number
+    mov al, 0x01            ;; remember that ah=0x13 and
+                            ;; al = 0x01 therefore ax = ...
+    int 0x10                ;; invoke interrupt 0x10
+
+    sti                     ;; start taking interrupts
+
+    mov ah, 0x02            ;; to set cursor to next line
+    xor dl, dl              ;; column number set = 0
+    add dh, 0x01            ;; row number set += 1
+    int 0x10
+
+    popa                    ;; resotore execution context for code.
+
+ret
+    
 
 ;; ---------------------------------------------------------------------+
 ;; fill all part of code till last 2 magic bytes with 0x00, why:        |
