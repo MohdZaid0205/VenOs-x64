@@ -130,7 +130,12 @@ _start:
     mov [BS_DRIVE_NUMBER], dl   ;; store device id, in case if its not
                                 ;; default address.
 
-    jmp $
+    jmp _panic
+
+_panic:
+
+    cli                     ;; stop interrupt before terminating
+    hlt                     ;; halt execution (dont let bios fallback)
 
 ;; fight with Logaical base Addressing and Cylender Head Sector (CHS)
 ;;  +-------------------------------------------------------------------+
@@ -204,8 +209,21 @@ disk_read:
     pop  ax                 ;; Restore the sector count.
     mov ah, 0x02            ;; Read Sectors From Drive
     
-    int 0x13                ;; INVOKE BIIOS
+    int 0x13                ;; INVOKE BIOS
+
+    cmp ah, 0x00            ;; check for error
+    jne disk_error          ;; error routine for reporting
 ret
+
+;; DISK_ERROR label
+;; default action to disk error suggest to reset disk system and try again
+;; atleast 3 times in order to get proper data in DRAM, but for purpose of 
+;; this project i am assuming that modern hardware is more than capable to
+;; required data once and for all, if any kind of error was raised we report
+disk_error:
+
+    put "disk_error"        ;; display disk error
+    jmp _panic              ;; stop execution of bootloader
 
 ;; FUNCTION_PRINT_LINE(bp=STRING_POINTER, cx=LENGTH_OF_SPECIFIED STRING)
 ;;  bp      :: contains pointer to string that is to be printed
