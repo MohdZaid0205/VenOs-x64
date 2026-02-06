@@ -136,6 +136,11 @@ _panic:
 
     cli                     ;; stop interrupt before terminating
     hlt                     ;; halt execution (dont let bios fallback)
+    ;; this hlt is necessary to rescue bootloader from TRIPLE FAULT
+    ;; https://en.wikipedia.org/wiki/Triple_fault#:~:text=This%20typically
+    ;; %20causes%20the%20motherboard%20hardware%20to%20initiate%20a%20CPU%
+    ;; 20reset%2C%20which%2C%20in%20turn%2C%20causes%20the%20whole%20compu
+    ;; ter%20to%20reboot.
 
 ;; fight with Logaical base Addressing and Cylender Head Sector (CHS)
 ;;  +-------------------------------------------------------------------+
