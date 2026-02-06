@@ -2,18 +2,27 @@
 # order to create and assemble bootloader stages into one as per
 # description of specified loader
 
-default: bootable_floppy
+default: FAT12 FAT12_DBG FAT32 FAT32_DBG
 
-stage1 = nasm stage1.asm -o ${BIN_DIR}/BOOT::STAGE1.bin -f bin
-stage2 = nasm stage2.asm -o ${BIN_DIR}/BOOT::STAGE2.bin -f bin
+stage1 = nasm stage1.asm -o ${BIN_DIR}/BOOT::STAGE1::FAT12.bin -f bin
+stage2 = nasm stage2.asm -o ${BIN_DIR}/BOOT::STAGE2::FAT12.bin -f bin
 
-bootable_floppy:
-	dd if=/dev/zero of=${OUT_DIR}/BOOTABLE_FLOPPY.img bs=1024 count=1440
-	${stage1} -DFAT12
-	dd if=${BIN_DIR}/BOOT::STAGE1.bin of=${OUT_DIR}/BOOTABLE_FLOPPY.img conv=notrunc bs=512 count=1
-	${stage2} -DFAT12
-	dd if=${BIN_DIR}/BOOT::STAGE1.bin of=${OUT_DIR}/BOOTABLE_FLOPPY.img conv=notrunc bs=512 count=1
-bootable_hdrive:
-	${stage1} -DFAT32
-	${stage2} -DFAT32
+# TODO: for each specified target a bootable image is required
+
+FAT12:
+	nasm stage1.asm -o ${BIN_DIR}/BOOT::STAGE1::FAT12.SYS -f bin -DFAT12
+	nasm stage2.asm -o ${BIN_DIR}/BOOT::STAGE2::FAT12.SYS -f bin -DFAT12
+
+FAT32:
+	nasm stage1.asm -o ${BIN_DIR}/BOOT::STAGE1::FAT32.SYS -f bin -DFAT32
+	nasm stage2.asm -o ${BIN_DIR}/BOOT::STAGE2::FAT32.SYS -f bin -DFAT32
+
+FAT12_DBG:
+	nasm stage1.asm -o ${BIN_DIR}/BOOT::STAGE1::FAT12.ELF -f elf64 -g -F dwarf -DDEBUG -DFAT12
+	nasm stage2.asm -o ${BIN_DIR}/BOOT::STAGE2::FAT12.ELF -f elf64 -g -F dwarf -DDEBUG -DFAT12
+
+
+FAT32_DBG:
+	nasm stage1.asm -o ${BIN_DIR}/BOOT::STAGE1::FAT32.ELF -f elf64 -g -F dwarf -DDEBUG -DFAT32
+	nasm stage2.asm -o ${BIN_DIR}/BOOT::STAGE2::FAT32.ELF -f elf64 -g -F dwarf -DDEBUG -DFAT32
 
