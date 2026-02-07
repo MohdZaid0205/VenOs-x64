@@ -38,9 +38,9 @@ is required. (this is not supposed to be a real OS) just a dummy.
 - intitial steps od creating [bootloader](https://wiki.osdev.org/Rolling_Your_Own_Bootloader).
 - [gdt](https://wiki.osdev.org/Global_Descriptor_Table) table reference.
 - [protected mode](https://wiki.osdev.org/Protected_Mode) and switching process.
-- [a20 line](https://wiki.osdev.org/A20_Line) and how to enable.
-- bios and real mode interrupts [odsev](https://wiki.osdev.org/BIOS), [wikipedia](https://en.wikipedia.org/wiki/BIOS_interrupt_call) and [parameters](http://employees.oneonta.edu/higgindm/assembly/DOS_AND_ROM_BIOS_INTS.htm)
-- boot [disk and floppy](https://en.wikipedia.org/wiki/INT_13H#:~:text=%5Bedit%5D-,Drive%20Table,-DL%20%3D%2000h) information and [access](https://wiki.osdev.org/Disk_access_using_the_BIOS_(INT_13h))
-- FAT12 Bios Parameter Block [contents](https://www.brokenthorn.com/Resources/OSDev6.html)
-- FAT32 Bios Parameter Block [contents](https://academy.cba.mit.edu/classes/networking_communications/SD/FAT.pdf)
-- Resource for [x86 instructions](https://c9x.me/x86/)
+- [a20 line](https://wiki.osdev.org/A20_Line) as [a pain from past](https://aeb.win.tue.nl/linux/kbd/A20.html).
+- bios and real mode interrupts [odsev](https://wiki.osdev.org/BIOS), [wikipedia](https://en.wikipedia.org/wiki/BIOS_interrupt_call) and [parameters](http://employees.oneonta.edu/higgindm/assembly/DOS_AND_ROM_BIOS_INTS.htm).
+- boot [disk and floppy](https://en.wikipedia.org/wiki/INT_13H#:~:text=%5Bedit%5D-,Drive%20Table,-DL%20%3D%2000h) information and [access](https://wiki.osdev.org/Disk_access_using_the_BIOS_(INT_13h)).
+- FAT12 Bios Parameter Block [contents](https://www.brokenthorn.com/Resources/OSDev6.html).
+- FAT32 Bios Parameter Block [contents](https://academy.cba.mit.edu/classes/networking_communications/SD/FAT.pdf).
+- Resource for [x86 instructions](https://c9x.me/x86/).
