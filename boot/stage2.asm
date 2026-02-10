@@ -32,7 +32,31 @@ _start:
     ;; https://aeb.win.tue.nl/linux/kbd/A20.html#:~:text=Using%200x92%20
     ;; may%20be%20necessary
     
+    mov di, 0x0500      ;; temporary storage for memorymap elements
+    xor ebx, ebx        ;; clear bx before use for mem_map entries
+    call memory_map     ;; list all memory map for system
+
     jmp $
+
+memory_map:
+    mov eax, 0xe820      ;; store instruction signifier into ax
+    mov edx, 0x534d4150  ;; store SMAP into dx as required by int 15h
+    mov ecx, 0x18        ;; store size for buffer that we provided
+    int 0x15            ;; call interrupt
+    jc .done            ;; carry signifies that we are done
+    
+    add di, 0x18        ;; add offset to move to next block
+    cmp di, sp          ;; compare di offset and stack pointer
+    jge .done           ;; if greater or equal to stack pointer
+                        ;; stack may get curropted so we terminate
+
+    test ebx, ebx         ;; if ebx is 0 then listing has been completed
+    jnz memory_map      ;; comtinue and look for next entry in line
+    
+    .done:
+        ;; everything completed just return to caller
+        mov dx, di
+ret
 
 print_string:
     
@@ -47,16 +71,23 @@ print_string:
         jmp .loop           ;; loop and print next chat
     
     .done:
-        mov ah, 0x03        ;; to get current cursor position
-        xor bh, bh          ;; no page is to be specified
-        int 0x10            ;; invoke interrupt 0x10
+        ;; done printing every charachter as required
+    popa            ;; restore context before returning to caller
+ret
 
-        mov ah, 0x02        ;; to set cursor to next line
-        xor dl, dl          ;; column number set = 0
-        add dh, 0x01        ;; row number set += 1
-        int 0x10
+print_nline:
+    pusha           ;; store context to resore after call returns
 
-        popa        ;; restore context before retutning to caller
+    mov ah, 0x03        ;; to get current cursor position
+    xor bh, bh          ;; no page is to be specified
+    int 0x10            ;; invoke interrupt 0x10
+
+    mov ah, 0x02        ;; to set cursor to next line
+    xor dl, dl          ;; column number set = 0
+    add dh, 0x01        ;; row number set += 1
+    int 0x10
+
+    popa            ;; restore context beore returninf to caller
 ret
 
 print_hex:
@@ -67,7 +98,7 @@ print_hex:
 
     .loop:
         mov ax, dx          ;; Copy the value from DX to AX for manipulation
-        and ax, 0xF000      ;; keep only the top 4 bits (the first hex digit)
+        and ax, 0xf000      ;; keep only the top 4 bits (the first hex digit)
         shr ax, 0x0c        ;; ignore lower 12 bit in order to print first 4
                             ;; (Example: 0xF000 becomes 0x000F)
 
@@ -83,12 +114,12 @@ print_hex:
         sub al, 0x0a        ;; remove 
     
     .print:
-        mov ah, 0x0E        ;; BIOS teletype function
+        mov ah, 0x0e        ;; BIOS teletype function
         int 0x10            ;; Print the character in AL
 
         shl dx, 0x04        ;; Shift DX left by 4 bits to bring the next digit 
         loop .loop          ;; Decrement CX and jump to .loop if CX > 0
 
-    popa                ; Restore registers
+    popa            ;; Restore registers
 ret
 
