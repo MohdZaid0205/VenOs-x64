@@ -44,3 +44,4 @@ is required. (this is not supposed to be a real OS) just a dummy.
 - FAT12 Bios Parameter Block [contents](https://www.brokenthorn.com/Resources/OSDev6.html).
 - FAT32 Bios Parameter Block [contents](https://academy.cba.mit.edu/classes/networking_communications/SD/FAT.pdf).
 - Resource for [x86 instructions](https://c9x.me/x86/).
+- Resource for [memory map](https://wiki.osdev.org/Memory_Map_(x86)) and how to [detect memory](https://wiki.osdev.org/Detecting_Memory_(x86)#E820h)
