@@ -123,3 +123,44 @@ print_hex:
     popa            ;; Restore registers
 ret
 
+print_map:
+    pusha                   ;; save all registers
+    
+    mov bx, 6               ;; start at highest offset (end of the number)
+    mov cx, 4               ;; 4 words (64-bit)
+    
+    put "Base:"
+
+    .base:
+        mov dx, [bx+di]     ;; load word at current offset
+        call print_hex      ;; print in hex format
+        sub bx, 2           ;; move backwards
+        loop .base
+
+    put " Length:"
+
+    mov bx, 14              ;; start at highest offset (8 + 6 = 14)
+    mov cx, 4               ;; 4 words
+    
+    .len:
+        mov dx, [bx+di]     ;; load word at current offset
+        call print_hex      ;; print in hex format
+        sub bx, 2           ;; move backwards
+        loop .len
+
+    put " Type: "
+
+    mov bx, 18              ;; start at highest offset (16 + 2 = 18)
+    mov cx, 2               ;; 2 words (32-bit)
+    
+    .type:
+        mov dx, [bx+di]     ;; load word at current offset
+        call print_hex      ;; print in hex format
+        sub bx, 2           ;; move backwards
+        loop .type
+
+    call print_nline
+
+    popa                    ;; restore context of previous registers
+ret
+
