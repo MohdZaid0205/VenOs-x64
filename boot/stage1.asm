@@ -96,7 +96,7 @@ BPB_HIDDEN_SECTORS:             dd 0x00000000
 ;; switching out of real mode.
 
 ;; Display given string to screen, using int 0x10 and at current cursor pos
-%macro put 1
+%macro putl 1
     jmp %%_CALL             ;; jump to calling data, ignore data itself
     %%_BGN: db %1           ;; dump message into any label
     %%_END: db 0x00         ;; null terminate the string
@@ -134,6 +134,8 @@ _start:
 
 _panic:
 
+    putl "BOOT/STAGE1: halted with PANIC!"
+    
     cli                     ;; stop interrupt before terminating
     hlt                     ;; halt execution (dont let bios fallback)
     ;; this hlt is necessary to rescue bootloader from TRIPLE FAULT
@@ -227,7 +229,7 @@ ret
 ;; required data once and for all, if any kind of error was raised we report
 disk_error:
 
-    put "disk_error"        ;; display disk error
+    putl "disk_error"        ;; display disk error
     jmp _panic              ;; stop execution of bootloader
 
 ;; FUNCTION_PRINT_LINE(bp=STRING_POINTER, cx=LENGTH_OF_SPECIFIED STRING)
