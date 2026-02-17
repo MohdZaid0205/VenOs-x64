@@ -5,11 +5,20 @@ jmp _start          ;; jump instruction just to make sure _start is run
 
 %macro put 1
     jmp %%_CALL         ;; jump to calling print, ignore data
-    %%_MSG: db %1, 0x0d ;; store data under a referable label
+    %%_MSG: db %1       ;; store data under a referable label
     %%_END: db 0x00     ;; store data under a referable label
 %%_CALL:
     mov si, %%_MSG      ;; move data into printable register
     call print_string   ;; call to start printing process
+%endmacro
+
+%macro endl 0
+    call print_nline    ;; move to begining of next line
+%endmacro
+
+%macro putl 1
+    put %1
+    endl
 %endmacro
 
 _start:
@@ -32,6 +41,8 @@ _start:
     ;; https://aeb.win.tue.nl/linux/kbd/A20.html#:~:text=Using%200x92%20
     ;; may%20be%20necessary
     
+    putl "BOOT/STAGE2: e820h memory map"
+
     mov di, 0x0500      ;; temporary storage for memorymap elements
     xor ebx, ebx        ;; clear bx before use for mem_map entries
     call memory_map     ;; list all memory map for system
@@ -39,27 +50,29 @@ _start:
     jmp $
 
 memory_map:
-    mov eax, 0xe820      ;; store instruction signifier into ax
-    mov edx, 0x534d4150  ;; store SMAP into dx as required by int 15h
-    mov ecx, 0x18        ;; store size for buffer that we provided
+    pusha               ;; store context of call to make canges temp
+
+    mov eax, 0xe820     ;; store instruction signifier into ax
+    mov edx, 0x534d4150 ;; store SMAP into dx as required by int 15h
+    mov ecx, 0x18       ;; store size for buffer that we provided
     int 0x15            ;; call interrupt
     jc .done            ;; carry signifies that we are done
     
+    call print_map
+
     add di, 0x18        ;; add offset to move to next block
     cmp di, sp          ;; compare di offset and stack pointer
     jge .done           ;; if greater or equal to stack pointer
                         ;; stack may get curropted so we terminate
 
-    test ebx, ebx         ;; if ebx is 0 then listing has been completed
+    test ebx, ebx       ;; if ebx is 0 then listing has been completed
     jnz memory_map      ;; comtinue and look for next entry in line
     
     .done:
-        ;; everything completed just return to caller
-        mov dx, di
+        popa            ;; restore all context to the register
 ret
 
 print_string:
-    
     pusha           ;; store context to restore after call returns
     mov ah, 0x0E    ;; required parameter for int 0x10
 
@@ -68,7 +81,7 @@ print_string:
         cmp al, 0x00        ;; if end string
         je  .done           ;; completed
         int 0x10            ;; print
-        jmp .loop           ;; loop and print next chat
+        jmp .loop           ;; loop and print next char
     
     .done:
         ;; done printing every charachter as required
@@ -129,7 +142,7 @@ print_map:
     mov bx, 6               ;; start at highest offset (end of the number)
     mov cx, 4               ;; 4 words (64-bit)
     
-    put "Base:"
+    put " B:"   ;; BASE
 
     .base:
         mov dx, [bx+di]     ;; load word at current offset
@@ -137,7 +150,7 @@ print_map:
         sub bx, 2           ;; move backwards
         loop .base
 
-    put " Length:"
+    put " L:"   ;; LENGTH
 
     mov bx, 14              ;; start at highest offset (8 + 6 = 14)
     mov cx, 4               ;; 4 words
@@ -148,18 +161,18 @@ print_map:
         sub bx, 2           ;; move backwards
         loop .len
 
-    put " Type: "
+    put " T: "  ;; TYPE
 
     mov bx, 18              ;; start at highest offset (16 + 2 = 18)
     mov cx, 2               ;; 2 words (32-bit)
     
     .type:
         mov dx, [bx+di]     ;; load word at current offset
-        call print_hex      ;; print in hex format
+       call print_hex      ;; print in hex format
         sub bx, 2           ;; move backwards
         loop .type
 
-    call print_nline
+    endl
 
     popa                    ;; restore context of previous registers
 ret
