@@ -1,5 +1,11 @@
 [BITS 16]           ;; work is still needed in real mode hence 16 bits
 
+%ifndef DEBUG
+    [ORG 0x1000]    ;; This is LEGACY BIOS implementation, which loads
+                    ;; bootable section into a predefined address of
+                    ;; 0x7c00 in memory.
+%endif
+
 jmp _start          ;; jump instruction just to make sure _start is run
                     ;; immidiately after jump to stage 2 was initiated
 
@@ -30,6 +36,8 @@ _start:
     mov ss, ax      ;; clean ss
     mov gs, ax      ;; clean gs
     
+    cld
+    
     mov ebp, 0x7c00 ;; previous stack pointer to newly created pointer
     mov esp, 0x7c00 ;; currnet stack pointer to beginning of stack
 
@@ -47,16 +55,29 @@ _start:
     xor ebx, ebx        ;; clear bx before use for mem_map entries
     call memory_map     ;; list all memory map for system
 
+    ;; call video_mode     ;; set video mode
+                        ;; For general development process we have
+                        ;; currently ignored this. may call this
+                        ;; in near future when screen rendering is
+                        ;; required
+
     jmp $
+
+video_mode:
+    mov ah, 0x00        ;; BIOS function: Set Video Mode
+    mov al, 0x13        ;; The video mode number (0x13 = VGA Graphics)
+    int 0x10            ;; Call BIOS video interrupt
+ret
 
 memory_map:
     pusha               ;; store context of call to make canges temp
-
-    mov eax, 0xe820     ;; store instruction signifier into ax
-    mov edx, 0x534d4150 ;; store SMAP into dx as required by int 15h
-    mov ecx, 0x18       ;; store size for buffer that we provided
-    int 0x15            ;; call interrupt
-    jc .done            ;; carry signifies that we are done
+    
+    .next:
+        mov eax, 0xe820     ;; store instruction signifier into ax
+        mov edx, 0x534d4150 ;; store SMAP into dx as required by int 15h
+        mov ecx, 0x18       ;; store size for buffer that we provided
+        int 0x15            ;; call interrupt
+        jc .done            ;; carry signifies that we are done
     
     call print_map
 
@@ -66,7 +87,7 @@ memory_map:
                         ;; stack may get curropted so we terminate
 
     test ebx, ebx       ;; if ebx is 0 then listing has been completed
-    jnz memory_map      ;; comtinue and look for next entry in line
+    jnz .next           ;; comtinue and look for next entry in line
     
     .done:
         popa            ;; restore all context to the register
