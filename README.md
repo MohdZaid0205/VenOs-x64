@@ -1,5 +1,7 @@
 # [Ve]nture [Os] (x64)
 
+![screen](res/welcome-screen.png)
+
 an implementation of operating system to run on x64 architecure cpu.
 This project is fun exercise to implement a complete or sudo-complete
 Operating system from scratch by applying concepts learnt during OS sessions
@@ -26,6 +28,8 @@ set architecture i386:x86-64
 target remote:1234
 add-symbol-file bin/boot.elf 0x7c00
 ```
+
+![eh-20 display](res/eh20-screen.png)
 
 ## Contribution
 
