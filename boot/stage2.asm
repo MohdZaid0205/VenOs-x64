@@ -30,6 +30,8 @@ _start:
     mov ss, ax      ;; clean ss
     mov gs, ax      ;; clean gs
     
+    cld
+    
     mov ebp, 0x7c00 ;; previous stack pointer to newly created pointer
     mov esp, 0x7c00 ;; currnet stack pointer to beginning of stack
 
@@ -51,12 +53,13 @@ _start:
 
 memory_map:
     pusha               ;; store context of call to make canges temp
-
-    mov eax, 0xe820     ;; store instruction signifier into ax
-    mov edx, 0x534d4150 ;; store SMAP into dx as required by int 15h
-    mov ecx, 0x18       ;; store size for buffer that we provided
-    int 0x15            ;; call interrupt
-    jc .done            ;; carry signifies that we are done
+    
+    .next:
+        mov eax, 0xe820     ;; store instruction signifier into ax
+        mov edx, 0x534d4150 ;; store SMAP into dx as required by int 15h
+        mov ecx, 0x18       ;; store size for buffer that we provided
+        int 0x15            ;; call interrupt
+        jc .done            ;; carry signifies that we are done
     
     call print_map
 
@@ -66,7 +69,7 @@ memory_map:
                         ;; stack may get curropted so we terminate
 
     test ebx, ebx       ;; if ebx is 0 then listing has been completed
-    jnz memory_map      ;; comtinue and look for next entry in line
+    jnz .next           ;; comtinue and look for next entry in line
     
     .done:
         popa            ;; restore all context to the register

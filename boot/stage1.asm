@@ -229,7 +229,7 @@ ret
 ;; required data once and for all, if any kind of error was raised we report
 disk_error:
 
-    putl "disk_error"        ;; display disk error
+    putl "BOOT/STAGE1: <disk_error>"
     jmp _panic              ;; stop execution of bootloader
 
 ;; FUNCTION_PRINT_LINE(bp=STRING_POINTER, cx=LENGTH_OF_SPECIFIED STRING)
