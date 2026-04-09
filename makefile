@@ -20,6 +20,17 @@ default: setup bootlaoder
 bootlaoder:
 	$(MAKE) -C boot
 
+# create proper support for floppy and hard drive images, both 
+# have boot written at first sector and then within file system 
+# they must have STAGE2.SYS added to file system on images
+image: floppy hdrive
+
+floppy:
+	$(MAKE) -C boot FAT12 FAT12_DBG
+	dd if=/dev/zero of=out/FLOPPY.img bs=512 count=2880
+	mformat -i out/FLOPPY.img -f 1440 -B bin/BOOT::STAGE1::FAT12.SYS ::
+	mcopy -i out/FLOPPY.img bin/BOOT::STAGE2::FAT12.SYS ::/STAGE2.SYS
+
 setup:
 	mkdir -p ${BIN_DIR}
 	mkdir -p ${OUT_DIR}
